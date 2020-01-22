@@ -10,4 +10,5 @@ export * from './src/api';
 export {TypeCheckContext} from './src/context';
 export {TemplateDiagnostic, isTemplateDiagnostic} from './src/diagnostics';
 export {TypeCheckProgramHost} from './src/host';
-export {typeCheckFilePath} from './src/type_check_file';
+export {typeCheckFilePath, TypeCheckFile, ExternalTypeCheckFile, InlineTypeCheckFile} from './src/type_check_file';
+export {R3TypeCheckHost, TypeCheckHost} from './src/type_check_host';

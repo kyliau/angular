@@ -8,7 +8,7 @@
 
 import * as ts from 'typescript';
 
-import {ModuleResolver} from '../../imports';
+import {ModuleResolver} from '../../imports/api';
 
 export abstract class RouterEntryPoint {
   abstract readonly filePath: string;

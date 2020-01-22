@@ -18,7 +18,26 @@ import {Environment} from './environment';
 import {OutOfBandDiagnosticRecorder} from './oob';
 import {generateTypeCheckBlock} from './type_check_block';
 
+export interface TypeCheckFile {
+  readonly fileName: string;
+  renderText(): string;
+}
 
+export class InlineTypeCheckFile implements TypeCheckFile {
+  private buffer: string;
+
+  constructor(readonly fileName: string, readonly sourceFile: ts.SourceFile) {
+    this.buffer = sourceFile.text;
+  }
+
+  setText(text: string) {
+    this.buffer = text;
+  }
+
+  renderText() {
+    return this.buffer;
+  }
+}
 
 /**
  * An `Environment` representing the single type-checking file into which most (if not all) Type
@@ -28,12 +47,12 @@ import {generateTypeCheckBlock} from './type_check_block';
  * constructors) between them. Rather than return such declarations via `getPreludeStatements()`, it
  * hoists them to the top of the generated `ts.SourceFile`.
  */
-export class TypeCheckFile extends Environment {
+export class ExternalTypeCheckFile extends Environment implements TypeCheckFile {
   private nextTcbId = 1;
   private tcbStatements: ts.Statement[] = [];
 
   constructor(
-      private fileName: string, config: TypeCheckingConfig, refEmitter: ReferenceEmitter,
+      readonly fileName: string, config: TypeCheckingConfig, refEmitter: ReferenceEmitter,
       reflector: ReflectionHost) {
     super(
         config, new ImportManager(new NoopImportRewriter(), 'i'), refEmitter, reflector,
@@ -48,7 +67,7 @@ export class TypeCheckFile extends Environment {
     this.tcbStatements.push(fn);
   }
 
-  render(): ts.SourceFile {
+  renderText(): string {
     let source: string = this.importManager.getAllImports(this.fileName)
                              .map(i => `import * as ${i.qualifier} from '${i.specifier}';`)
                              .join('\n') +
@@ -74,8 +93,7 @@ export class TypeCheckFile extends Environment {
     // is somehow more expensive than the initial parse.
     source += '\nexport const IS_A_MODULE = true;\n';
 
-    return ts.createSourceFile(
-        this.fileName, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+    return source;
   }
 
   getPreludeStatements(): ts.Statement[] {

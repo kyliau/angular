@@ -8,7 +8,7 @@
 
 import * as ts from 'typescript';
 
-import {ModuleResolver} from '../../imports';
+import {ModuleResolver} from '../../imports/api';
 import {PartialEvaluator} from '../../partial_evaluator';
 
 import {scanForCandidateTransitiveModules, scanForRouteEntryPoints} from './lazy';

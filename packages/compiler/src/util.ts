@@ -9,7 +9,7 @@
 import {ConstantPool} from './constant_pool';
 
 import * as o from './output/output_ast';
-import {ParseError} from './parse_util';
+import {ParseError, ParseErrorLevel} from './parse_util';
 
 const DASH_CASE_REGEXP = /-+([a-z0-9])/g;
 

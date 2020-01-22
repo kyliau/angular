@@ -9,7 +9,6 @@
 import {BoundTarget, ParseSourceFile, SchemaMetadata} from '@angular/compiler';
 import * as ts from 'typescript';
 
-import {AbsoluteFsPath} from '../../file_system';
 import {NoopImportRewriter, Reference, ReferenceEmitter} from '../../imports';
 import {ClassDeclaration, ReflectionHost} from '../../reflection';
 import {ImportManager} from '../../translator';
@@ -18,11 +17,11 @@ import {TemplateSourceMapping, TypeCheckableDirectiveMeta, TypeCheckBlockMetadat
 import {shouldReportDiagnostic, translateDiagnostic} from './diagnostics';
 import {DomSchemaChecker, RegistryDomSchemaChecker} from './dom';
 import {Environment} from './environment';
-import {TypeCheckProgramHost} from './host';
 import {OutOfBandDiagnosticRecorder, OutOfBandDiagnosticRecorderImpl} from './oob';
 import {TemplateSourceManager} from './source';
 import {generateTypeCheckBlock, requiresInlineTypeCheckBlock} from './type_check_block';
-import {TypeCheckFile} from './type_check_file';
+import {InlineTypeCheckFile} from './type_check_file';
+import {R3TypeCheckHost} from './type_check_host';
 import {generateInlineTypeCtor, requiresInlineTypeCtor} from './type_constructor';
 
 
@@ -35,19 +34,19 @@ import {generateInlineTypeCtor, requiresInlineTypeCtor} from './type_constructor
  * checking code.
  */
 export class TypeCheckContext {
-  private typeCheckFile: TypeCheckFile;
+  // private typeCheckFile: TypeCheckFile;
 
   constructor(
       private config: TypeCheckingConfig, private refEmitter: ReferenceEmitter,
-      private reflector: ReflectionHost, typeCheckFilePath: AbsoluteFsPath) {
-    this.typeCheckFile = new TypeCheckFile(typeCheckFilePath, config, refEmitter, reflector);
+      private reflector: ReflectionHost, private host: R3TypeCheckHost) {
+    // this.typeCheckFile = new TypeCheckFile(typeCheckFilePath, config, refEmitter, reflector);
   }
 
   /**
    * A `Map` of `ts.SourceFile`s that the context has seen to the operations (additions of methods
    * or type-check blocks) that need to be eventually performed on that file.
    */
-  private opMap = new Map<ts.SourceFile, Op[]>();
+  private opMap = new Map<InlineTypeCheckFile, Op[]>();
 
   /**
    * Tracks when an a particular class has a pending type constructor patching operation already
@@ -82,7 +81,7 @@ export class TypeCheckContext {
       const dirNode = dirRef.node;
       if (requiresInlineTypeCtor(dirNode, this.reflector)) {
         // Add a type constructor operation for the directive.
-        this.addInlineTypeCtor(dirNode.getSourceFile(), dirRef, {
+        this.addInlineTypeCtor(dirRef, {
           fnName: 'ngTypeCtor',
           // The constructor should have a body if the directive comes from a .ts file, but not if
           // it comes from a .d.ts file. .d.ts declarations don't have bodies.
@@ -105,8 +104,8 @@ export class TypeCheckContext {
       this.addInlineTypeCheckBlock(ref, tcbMetadata);
     } else {
       // The class can be type-checked externally as normal.
-      this.typeCheckFile.addTypeCheckBlock(
-          ref, tcbMetadata, this.domSchemaChecker, this.oobRecorder);
+      const tcf = this.host.getExternalTypeCheckFileFor(ref);
+      tcf.addTypeCheckBlock(ref, tcbMetadata, this.domSchemaChecker, this.oobRecorder);
     }
   }
 
@@ -114,12 +113,13 @@ export class TypeCheckContext {
    * Record a type constructor for the given `node` with the given `ctorMetadata`.
    */
   addInlineTypeCtor(
-      sf: ts.SourceFile, ref: Reference<ClassDeclaration<ts.ClassDeclaration>>,
-      ctorMeta: TypeCtorMetadata): void {
+      ref: Reference<ClassDeclaration<ts.ClassDeclaration>>, ctorMeta: TypeCtorMetadata): void {
     if (this.typeCtorPending.has(ref.node)) {
       return;
     }
     this.typeCtorPending.add(ref.node);
+
+    const sf = this.host.getInlineTypeCheckFileFor(ref);
 
     // Lazily construct the operation map.
     if (!this.opMap.has(sf)) {
@@ -139,7 +139,7 @@ export class TypeCheckContext {
    * `ts.SourceFile` is parsed from modified text of the original. This is necessary to ensure the
    * added code has correct positional information associated with it.
    */
-  transform(sf: ts.SourceFile): ts.SourceFile {
+  private transform(sf: InlineTypeCheckFile): InlineTypeCheckFile {
     // If there are no operations pending for this particular file, return it directly.
     if (!this.opMap.has(sf)) {
       return sf;
@@ -153,7 +153,7 @@ export class TypeCheckContext {
     // original source text into chunks at these split points, where code will be inserted between
     // the chunks.
     const ops = this.opMap.get(sf)!.sort(orderOps);
-    const textParts = splitStringAtPoints(sf.text, ops.map(op => op.splitPoint));
+    const textParts = splitStringAtPoints(sf.sourceFile.text, ops.map(op => op.splitPoint));
 
     // Use a `ts.Printer` to generate source code.
     const printer = ts.createPrinter({omitTrailingSemicolon: true});
@@ -164,7 +164,7 @@ export class TypeCheckContext {
     // Process each operation and use the printer to generate source code for it, inserting it into
     // the source code in between the original chunks.
     ops.forEach((op, idx) => {
-      const text = op.execute(importManager, sf, this.refEmitter, printer);
+      const text = op.execute(importManager, sf.sourceFile, this.refEmitter, printer);
       code += '\n\n' + text + textParts[idx + 1];
     });
 
@@ -174,16 +174,27 @@ export class TypeCheckContext {
                       .join('\n');
     code = imports + '\n' + code;
 
+    sf.setText(code);
+
+    return sf;
     // Parse the new source file and return it.
-    return ts.createSourceFile(sf.fileName, code, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+    // return ts.createSourceFile(sf.fileName, code, ts.ScriptTarget.Latest, true,
+    // ts.ScriptKind.TS);
   }
 
-  calculateTemplateDiagnostics(
-      originalProgram: ts.Program, originalHost: ts.CompilerHost,
-      originalOptions: ts.CompilerOptions): {
+  calculateTemplateDiagnostics(originalProgram: ts.Program): {
     diagnostics: ts.Diagnostic[],
     program: ts.Program,
   } {
+    const interestingFiles = this.host.renderAll();
+    for (const tcf of interestingFiles) {
+      if (tcf instanceof InlineTypeCheckFile) {
+        this.transform(tcf);
+      }
+    }
+    const typeCheckProgram = this.host.getProgram(interestingFiles, originalProgram);
+
+    /*
     const typeCheckSf = this.typeCheckFile.render();
     // First, build the map of original source files.
     const sfMap = new Map<string, ts.SourceFile>();
@@ -204,9 +215,16 @@ export class TypeCheckContext {
       oldProgram: originalProgram,
       rootNames: originalProgram.getRootFileNames(),
     });
+    */
 
     const diagnostics: ts.Diagnostic[] = [];
-    const collectDiagnostics = (diags: readonly ts.Diagnostic[]): void => {
+
+    for (const {fileName} of interestingFiles) {
+      const sf = typeCheckProgram.getSourceFile(fileName);
+      if (!sf) {
+        throw new Error(`${fileName} not found in typecheck program!`)
+      }
+      const diags = typeCheckProgram.getSemanticDiagnostics(sf);
       for (const diagnostic of diags) {
         if (shouldReportDiagnostic(diagnostic)) {
           const translated = translateDiagnostic(diagnostic, this.sourceManager);
@@ -216,10 +234,6 @@ export class TypeCheckContext {
           }
         }
       }
-    };
-
-    for (const sf of interestingFiles) {
-      collectDiagnostics(typeCheckProgram.getSemanticDiagnostics(sf));
     }
 
     diagnostics.push(...this.domSchemaChecker.diagnostics);
@@ -234,7 +248,7 @@ export class TypeCheckContext {
   private addInlineTypeCheckBlock(
       ref: Reference<ClassDeclaration<ts.ClassDeclaration>>,
       tcbMeta: TypeCheckBlockMetadata): void {
-    const sf = ref.node.getSourceFile();
+    const sf = this.host.getInlineTypeCheckFileFor(ref);
     if (!this.opMap.has(sf)) {
       this.opMap.set(sf, []);
     }

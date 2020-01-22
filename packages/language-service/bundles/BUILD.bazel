@@ -1,5 +1,9 @@
 load("//tools/ng_rollup_bundle:ng_rollup_bundle.bzl", "ls_rollup_bundle")
 
+package(
+  default_visibility = ["//packages/language-service:__subpackages__"],
+)
+
 ls_rollup_bundle(
     name = "language-service",
     entry_point = "//packages/language-service:index.ts",
@@ -10,9 +14,28 @@ ls_rollup_bundle(
         "typescript/lib/tsserverlibrary": "tss",
     },
     license_banner = ":banner",
-    visibility = ["//packages/language-service:__pkg__"],
+    # visibility = ["//packages/language-service:__pkg__"],
     deps = [
         "//packages/language-service",
+        "@npm//rxjs",
+        "@npm//tslib",
+    ],
+)
+
+ls_rollup_bundle(
+    name = "r3",
+    entry_point = "//packages/language-service/r3:ts_plugin.ts",
+    globals = {
+        "fs": "fs",
+        "path": "path",
+        "typescript": "ts",
+        "typescript/lib/tsserverlibrary": "tss",
+        "fs-extra": "fsExtra",
+    },
+    license_banner = ":banner",
+    # visibility = ["//packages/language-service/r3:__pkg__"],
+    deps = [
+        "//packages/language-service/r3:r3",
         "@npm//rxjs",
         "@npm//tslib",
     ],

@@ -1,30 +1,25 @@
 load("//tools:defaults.bzl", "pkg_npm", "ts_library")
+load("//tools/ng_rollup_bundle:ng_rollup_bundle.bzl", "ls_rollup_bundle")
 
 package(default_visibility = ["//visibility:public"])
 
 ts_library(
-    name = "language-service",
+    name = "r3",
     srcs = glob(
         [
             "*.ts",
-            "src/*.ts",
-            # "src/**/*.ts",
         ],
     ),
     deps = [
-        "//packages:types",
         "//packages/compiler",
         "//packages/compiler-cli",
-        "//packages/core",
-        "@npm//@types/node",
         "@npm//typescript",
-
         "//packages/compiler-cli/src/ngtsc/annotations",
-        "//packages/compiler-cli/src/ngtsc/core",
         "//packages/compiler-cli/src/ngtsc/core:api",
+        "//packages/compiler-cli/src/ngtsc/core",
         "//packages/compiler-cli/src/ngtsc/cycles",
         "//packages/compiler-cli/src/ngtsc/entry_point",
-        "//packages/compiler-cli/src/ngtsc/file_system",
+        # "//packages/compiler-cli/src/ngtsc/file_system",
         "//packages/compiler-cli/src/ngtsc/imports",
         "//packages/compiler-cli/src/ngtsc/incremental",
         "//packages/compiler-cli/src/ngtsc/metadata",
@@ -36,23 +31,31 @@ ts_library(
         "//packages/compiler-cli/src/ngtsc/routing",
         "//packages/compiler-cli/src/ngtsc/scope",
         "//packages/compiler-cli/src/ngtsc/transform",
+        "//packages/compiler-cli/src/ngtsc/typecheck",
+        "//packages/compiler-cli/src/ngtsc/util",
     ],
+)
+
+genrule(
+  name = "bundle",
+  srcs = ["//packages/language-service/bundles:r3.umd.js"],
+  outs = ["main.umd.js"],
+  cmd = "cp $< $@",
 )
 
 pkg_npm(
     name = "npm_package",
-    srcs = ["package.json"],
+    srcs = [
+      "package.json",
+
+      ],
     tags = [
         "release-with-framework",
     ],
     # Do not add more to this list.
     # Dependencies on the full npm_package cause long re-builds.
-    visibility = [
-        "//integration:__pkg__",
-    ],
+    visibility = ["//visibility:private"],
     deps = [
-        ":language-service",
-        # min bundle is not used at the moment; omit from package to speed up build
-        "//packages/language-service/bundles:language-service.umd.js",
+      ":bundle",
     ],
 )

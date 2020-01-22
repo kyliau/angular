@@ -13,10 +13,11 @@ import {absoluteFromSourceFile, dirname, LogicalFileSystem, LogicalProjectPath, 
 import {stripExtension} from '../../file_system/src/util';
 import {ReflectionHost} from '../../reflection';
 import {getSourceFile, isDeclaration, isTypeDeclaration, nodeNameForError} from '../../util/src/typescript';
+import {ModuleResolver} from '../api';
 
 import {findExportedNameOfNode} from './find_export';
 import {Reference} from './references';
-import {ModuleResolver} from './resolver';
+
 
 
 /**

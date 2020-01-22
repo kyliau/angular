@@ -8,7 +8,7 @@
 
 import * as ts from 'typescript';
 
-import {ModuleResolver} from '../../imports';
+import {ModuleResolver} from '../../imports/api';
 
 /**
  * A cached graph of imports in the `ts.Program`.

@@ -14,7 +14,7 @@ import {isNamedClassDeclaration, TypeScriptReflectionHost} from '../../reflectio
 import {getDeclaration, makeProgram} from '../../testing';
 import {getRootDirs} from '../../util/src/typescript';
 import {TypeCheckContext} from '../src/context';
-import {TypeCheckFile} from '../src/type_check_file';
+import {ExternalTypeCheckFile} from '../src/type_check_file';
 
 import {ALL_ENABLED_CONFIG} from './test_utils';
 
@@ -42,7 +42,7 @@ runInEachFileSystem(() => {
     });
 
     it('should not produce an empty SourceFile when there is nothing to typecheck', () => {
-      const file = new TypeCheckFile(
+      const file = new ExternalTypeCheckFile(
           _('/_typecheck_.ts'), ALL_ENABLED_CONFIG, new ReferenceEmitter([]),
           /* reflector */ null!);
       const sf = file.render();

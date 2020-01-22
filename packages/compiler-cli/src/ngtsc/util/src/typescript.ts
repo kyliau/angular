@@ -91,7 +91,9 @@ export function isExported(node: ts.Declaration): boolean {
       topLevel.modifiers.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword);
 }
 
-export function getRootDirs(host: ts.CompilerHost, options: ts.CompilerOptions): AbsoluteFsPath[] {
+export function getRootDirs(
+    host: Pick<ts.CompilerHost, 'getCurrentDirectory'>,
+    options: ts.CompilerOptions): AbsoluteFsPath[] {
   const rootDirs: string[] = [];
   if (options.rootDirs !== undefined) {
     rootDirs.push(...options.rootDirs);

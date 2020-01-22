@@ -263,20 +263,17 @@ export class TransformVisitor implements Visitor<Node> {
 }
 
 export function visitAll<Result>(visitor: Visitor<Result>, nodes: Node[]): Result[] {
-  const result: Result[] = [];
-  if (visitor.visit) {
-    for (const node of nodes) {
-      const newNode = visitor.visit(node) || node.visit(visitor);
-    }
-  } else {
-    for (const node of nodes) {
-      const newNode = node.visit(visitor);
-      if (newNode) {
-        result.push(newNode);
-      }
+  const results: Result[] = [];
+  for (const node of nodes) {
+    // Returning a truthy value from `visit()` will prevent `visitAll()` from
+    // the call to the typed method and result returned will become the result
+    // included in `visitAll()`s result array.
+    const result = visitor.visit ? visitor.visit(node) : node.visit(visitor);
+    if (result) {
+      results.push(result);
     }
   }
-  return result;
+  return results;
 }
 
 export function transformAll<Result extends Node>(

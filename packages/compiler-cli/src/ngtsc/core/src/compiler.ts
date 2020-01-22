@@ -28,7 +28,7 @@ import {ComponentScopeReader, LocalModuleScopeRegistry, MetadataDtsModuleScopeRe
 import {generatedFactoryTransform} from '../../shims';
 import {ivySwitchTransform} from '../../switch';
 import {aliasTransformFactory, declarationTransformFactory, DecoratorHandler, DtsTransformRegistry, ivyTransformFactory, TraitCompiler} from '../../transform';
-import {isTemplateDiagnostic, TypeCheckContext, TypeCheckingConfig} from '../../typecheck';
+import {ExternalTypeCheckFile, isTemplateDiagnostic, TypeCheckContext, TypeCheckHost, TypeCheckingConfig} from '../../typecheck';
 import {getSourceFileOrNull, isDtsPath, resolveModuleName} from '../../util/src/typescript';
 import {LazyRoute, NgCompilerOptions} from '../api';
 
@@ -485,15 +485,17 @@ export class NgCompiler {
 
     // Execute the typeCheck phase of each decorator in the program.
     const prepSpan = this.perfRecorder.start('typeCheckPrep');
+    const tcf = new ExternalTypeCheckFile(
+        host.typeCheckFile, typeCheckingConfig, compilation.refEmitter, compilation.reflector);
+    const tcHost = new TypeCheckHost(tcf, host);
     const ctx = new TypeCheckContext(
-        typeCheckingConfig, compilation.refEmitter!, compilation.reflector, host.typeCheckFile);
+        typeCheckingConfig, compilation.refEmitter!, compilation.reflector, tcHost);
     compilation.traitCompiler.typeCheck(ctx);
     this.perfRecorder.stop(prepSpan);
 
     // Get the diagnostics.
     const typeCheckSpan = this.perfRecorder.start('typeCheckDiagnostics');
-    const {diagnostics, program} =
-        ctx.calculateTemplateDiagnostics(this.tsProgram, this.host, this.options);
+    const {diagnostics, program} = ctx.calculateTemplateDiagnostics(this.tsProgram);
     this.perfRecorder.stop(typeCheckSpan);
     setIncrementalDriver(program, this.incrementalDriver);
     this.nextProgram = program;

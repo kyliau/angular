@@ -8,6 +8,7 @@
 import * as ts from 'typescript';
 import {absoluteFrom} from '../../file_system';
 import {getSourceFileOrNull, resolveModuleName} from '../../util/src/typescript';
+import * as api from '../api';
 
 /**
  * Used by `RouterEntryPointManager` and `NgModuleRouteAnalyzer` (which is in turn is used by
@@ -15,7 +16,7 @@ import {getSourceFileOrNull, resolveModuleName} from '../../util/src/typescript'
  * routes (relative to the source-file containing the `NgModule` that provides the route
  * definitions).
  */
-export class ModuleResolver {
+export class ModuleResolver implements api.ModuleResolver {
   constructor(
       private program: ts.Program, private compilerOptions: ts.CompilerOptions,
       private host: ts.CompilerHost, private moduleResolutionCache: ts.ModuleResolutionCache|null) {

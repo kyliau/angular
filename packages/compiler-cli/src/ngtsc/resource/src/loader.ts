@@ -26,7 +26,11 @@ export class HostResourceLoader implements ResourceLoader {
 
   canPreload = !!this.host.readResource;
 
-  constructor(private host: ExtendedTsCompilerHost, private options: ts.CompilerOptions) {
+  constructor(
+      private host: Pick<
+          ExtendedTsCompilerHost,
+          'resourceNameToFileName'|'readResource'|'readFile'|'fileExists'|'getCurrentDirectory'>,
+      private options: ts.CompilerOptions) {
     this.rootDirs = getRootDirs(host, options);
   }
 
