@@ -218,6 +218,13 @@ import {SpyChangeDetectorRef} from '../spies';
       });
     });
 
+    describe('undefined', () => {
+      it('should return null when given undefined', () => {
+        const pipe = new AsyncPipe(null as any);
+        expect(pipe.transform(undefined)).toEqual(null);
+      });
+    });
+
     describe('other types', () => {
       it('should throw when given an invalid object', () => {
         const pipe = new AsyncPipe(null as any);
