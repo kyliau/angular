@@ -17,7 +17,7 @@ describe('KeyValuePipe', () => {
   });
   it('should return null when given undefined', () => {
     const pipe = new KeyValuePipe(defaultKeyValueDiffers);
-    expect(pipe.transform(undefined as any)).toEqual(null);
+    expect(pipe.transform(undefined)).toEqual(null);
   });
   it('should return null for an unsupported type', () => {
     const pipe = new KeyValuePipe(defaultKeyValueDiffers);
