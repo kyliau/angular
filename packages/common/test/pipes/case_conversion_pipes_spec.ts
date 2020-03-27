@@ -25,6 +25,16 @@ import {LowerCasePipe, TitleCasePipe, UpperCasePipe} from '@angular/common';
       expect(pipe.transform('BAr')).toEqual('bar');
     });
 
+    it('should map null to null', () => {
+      expect(pipe.transform(null)).toEqual(null);
+    });
+    it('should map undefined to null', () => {
+      expect(pipe.transform(undefined)).toEqual(null);
+    });
+
+    it('should not support numbers', () => {
+      expect(() => pipe.transform(<any>0)).toThrowError();
+    });
     it('should not support other objects', () => {
       expect(() => pipe.transform(<any>{})).toThrowError();
     });
@@ -80,6 +90,16 @@ import {LowerCasePipe, TitleCasePipe, UpperCasePipe} from '@angular/common';
       expect(pipe.transform('éric')).toEqual('Éric');
     });
 
+    it('should map null to null', () => {
+      expect(pipe.transform(null)).toEqual(null);
+    });
+    it('should map undefined to null', () => {
+      expect(pipe.transform(undefined)).toEqual(null);
+    });
+
+    it('should not support numbers', () => {
+      expect(() => pipe.transform(<any>0)).toThrowError();
+    });
     it('should not support other objects', () => {
       expect(() => pipe.transform(<any>{})).toThrowError();
     });
@@ -101,6 +121,16 @@ import {LowerCasePipe, TitleCasePipe, UpperCasePipe} from '@angular/common';
       expect(pipe.transform('bar')).toEqual('BAR');
     });
 
+    it('should map null to null', () => {
+      expect(pipe.transform(null)).toEqual(null);
+    });
+    it('should map undefined to null', () => {
+      expect(pipe.transform(undefined)).toEqual(null);
+    });
+
+    it('should not support numbers', () => {
+      expect(() => pipe.transform(<any>0)).toThrowError();
+    });
     it('should not support other objects', () => {
       expect(() => pipe.transform(<any>{})).toThrowError();
     });

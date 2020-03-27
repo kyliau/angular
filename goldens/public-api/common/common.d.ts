@@ -193,6 +193,7 @@ export declare abstract class LocationStrategy {
 }
 
 export declare class LowerCasePipe implements PipeTransform {
+    transform(value: string | null | undefined): string | null;
     transform(value: string): string;
 }
 
@@ -391,6 +392,7 @@ export declare type Time = {
 };
 
 export declare class TitleCasePipe implements PipeTransform {
+    transform(value: string | null | undefined): string | null;
     transform(value: string): string;
 }
 
@@ -402,6 +404,7 @@ export declare enum TranslationWidth {
 }
 
 export declare class UpperCasePipe implements PipeTransform {
+    transform(value: string | null | undefined): string | null;
     transform(value: string): string;
 }
 
