@@ -376,10 +376,10 @@ export declare interface PopStateEvent {
 export declare function registerLocaleData(data: any, localeId?: string | any, extraData?: any): void;
 
 export declare class SlicePipe implements PipeTransform {
+    transform<T>(value: ReadonlyArray<T> | null | undefined, start: number, end?: number): Array<T> | null;
     transform<T>(value: ReadonlyArray<T>, start: number, end?: number): Array<T>;
+    transform(value: string | null | undefined, start: number, end?: number): string | null;
     transform(value: string, start: number, end?: number): string;
-    transform(value: null, start: number, end?: number): null;
-    transform(value: undefined, start: number, end?: number): undefined;
 }
 
 export declare type Time = {
