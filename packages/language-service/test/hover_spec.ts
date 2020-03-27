@@ -211,7 +211,7 @@ describe('hover', () => {
       expect(textSpan).toEqual(marker);
       expect(toText(displayParts))
           .toBe(
-              '(pipe) date: (value: any, format?: string | undefined, timezone?: string | undefined, locale?: string | undefined) => string | null');
+              '(pipe) date: (value: string | number | Date | null | undefined, format?: string | undefined, timezone?: string | undefined, locale?: string | undefined) => string | null');
     });
 
     it('should work for the $any() cast function', () => {

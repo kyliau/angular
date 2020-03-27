@@ -16,7 +16,7 @@ export declare class CurrencyPipe implements PipeTransform {
 
 export declare class DatePipe implements PipeTransform {
     constructor(locale: string);
-    transform(value: any, format?: string, timezone?: string, locale?: string): string | null;
+    transform(value: Date | string | number | null | undefined, format?: string, timezone?: string, locale?: string): string | null;
 }
 
 export declare class DecimalPipe implements PipeTransform {
