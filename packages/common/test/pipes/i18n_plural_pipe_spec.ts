@@ -54,7 +54,12 @@ import {JitReflector} from '@angular/platform-browser-dynamic/src/compiler_refle
       });
 
       it('should use "" if value is undefined', () => {
-        const val = pipe.transform(void (0) as any, mapping);
+        const val = pipe.transform(undefined, mapping);
+        expect(val).toEqual('');
+      });
+
+      it('should use "" if value is null', () => {
+        const val = pipe.transform(null, mapping);
         expect(val).toEqual('');
       });
 

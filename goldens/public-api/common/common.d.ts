@@ -102,7 +102,7 @@ export declare class HashLocationStrategy extends LocationStrategy {
 
 export declare class I18nPluralPipe implements PipeTransform {
     constructor(_localization: NgLocalization);
-    transform(value: number, pluralMap: {
+    transform(value: number | null | undefined, pluralMap: {
         [count: string]: string;
     }, locale?: string): string;
 }
