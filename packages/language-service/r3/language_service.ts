@@ -13,40 +13,21 @@ import * as ts from 'typescript/lib/tsserverlibrary';
 
 import {isExpressionNode, isR3Node, R3Visitor} from './ast_visitor';
 import {getDefinitionAndBoundSpanForExternalTemplate} from './definition';
-import {LanguageServiceHost} from './language_service_host';
+import {Compiler} from './compiler';
 import {findTightestNode} from './utils';
 import {getClassDeclFromDecoratorProp, getPropertyAssignmentFromValue} from './utils';
 
 
 export class LanguageService {
-  constructor(private readonly host: LanguageServiceHost) {}
+  constructor(
+    private readonly project: ts.server.Project,
+    private readonly tsLS: ts.LanguageService,
+  ) {}
 
   getSemanticDiagnostics(fileName: string): ts.Diagnostic[] {
     const compilation = this.host.analyzeSync();
     const sourceFile = this.host.getSourceFile(fileName);
     return this.host.getDiagnostics(compilation, sourceFile);
-  }
-
-  getCompletionsAtPosition(
-      fileName: string, position: number,
-      options?: ts.GetCompletionsAtPositionOptions): ts.CompletionInfo|undefined {
-    // this.host.getAnalyzedModules();  // same role as 'synchronizeHostData'
-    // const ast = this.host.getTemplateAstAtPosition(fileName, position);
-    // if (!ast) {
-    //   return;
-    // }
-    // const results = getTemplateCompletions(ast, position);
-    // if (!results || !results.length) {
-    //   return;
-    // }
-    // return {
-    //   isGlobalCompletion: false,
-    //   isMemberCompletion: false,
-    //   isNewIdentifierLocation: false,
-    //   // Cast CompletionEntry.kind from ng.CompletionKind to ts.ScriptElementKind
-    //   entries: results as unknown as ts.CompletionEntry[],
-    // };
-    return;
   }
 
   getDefinitionAndBoundSpan(fileName: string, position: number): ts.DefinitionInfoAndBoundSpan
@@ -120,38 +101,10 @@ export class LanguageService {
     } else {
       return getDefinitionAndBoundSpanForExternalTemplate();
     }
-
-
-
-    // this.host.getAnalyzedModules();  // same role as 'synchronizeHostData'
-    // const templateInfo = this.host.getTemplateAstAtPosition(fileName, position);
-    // if (templateInfo) {
-    //   return getDefinitionAndBoundSpan(templateInfo, position);
-    // }
-
-    // // Attempt to get Angular-specific definitions in a TypeScript file, like templates defined
-    // // in a `templateUrl` property.
-    // if (fileName.endsWith('.ts')) {
-    //   const sf = this.host.getSourceFile(fileName);
-    //   if (sf) {
-    //     return getTsDefinitionAndBoundSpan(sf, position, this.host.tsLsHost);
-    //   }
-    // }
     return;
   }
 
-  getQuickInfoAtPosition(fileName: string, position: number): ts.QuickInfo|undefined {
-    // const analyzedModules = this.host.getAnalyzedModules();  // same role as
-    // 'synchronizeHostData'
-    // const templateInfo = this.host.getTemplateAstAtPosition(fileName, position);
-    // if (templateInfo) {
-    //   return getTemplateHover(templateInfo, position, analyzedModules);
-    // }
-
-    // // Attempt to get Angular-specific hover information in a TypeScript file, the NgModule a
-    // // directive belongs to.
-    // const declarations = this.host.getDeclarations(fileName);
-    // return getTsHover(position, declarations, analyzedModules);
-    return;
+  private analyze() {
+    // This method plays the same role as `synchronizeHostData` in typescript.
   }
 }
