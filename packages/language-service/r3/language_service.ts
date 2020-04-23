@@ -12,17 +12,23 @@ import {TraitState} from '@angular/compiler-cli/src/ngtsc/transform';
 import * as ts from 'typescript/lib/tsserverlibrary';
 
 import {isExpressionNode, isR3Node, R3Visitor} from './ast_visitor';
-import {getDefinitionAndBoundSpanForExternalTemplate} from './definition';
-import {Compiler} from './compiler';
 import {findTightestNode} from './utils';
 import {getClassDeclFromDecoratorProp, getPropertyAssignmentFromValue} from './utils';
+import { NgCompilerOptions } from '@angular/compiler-cli/src/ngtsc/core/api';
+import { createNgCompilerOptions, CompilerOptions } from '@angular/compiler-cli';
 
 
 export class LanguageService {
+  private program: ts.Program;
+  private readonly options: NgCompilerOptions;
+
   constructor(
     private readonly project: ts.server.Project,
     private readonly tsLS: ts.LanguageService,
-  ) {}
+  ) {
+    this.program = tsLS.getProgram()!;
+    this.options = parseNgCompilerOptions(project);
+  }
 
   getSemanticDiagnostics(fileName: string): ts.Diagnostic[] {
     const compilation = this.host.analyzeSync();
@@ -32,6 +38,10 @@ export class LanguageService {
 
   getDefinitionAndBoundSpan(fileName: string, position: number): ts.DefinitionInfoAndBoundSpan
       |undefined {
+    if (!fileName.endsWith('.ts')) {
+      // Does not support external template for now
+      return;
+    }
     const compilation = this.host.analyzeSync();
     if (!compilation) {
       return;
@@ -44,67 +54,73 @@ export class LanguageService {
     if (!node) {
       return;
     }
-    // Need to get inline or external template
-    if (fileName.endsWith('.ts')) {
-      const templateAssignment = getPropertyAssignmentFromValue(node);
-      if (!templateAssignment || templateAssignment.name.getText() !== 'template') {
-        return;
-      }
-      const classDecl = getClassDeclFromDecoratorProp(templateAssignment);
-      if (!classDecl || !classDecl.name) {
-        // Does not handle anonymous class
-        return;
-      }
-      // TODO: Check if declaration is exported
-      const record = this.host.getClassRecord(compilation, classDecl);
-      if (!record) {
-        return;
-      }
-      for (const trait of record.traits) {
-        if (trait.state !== TraitState.RESOLVED) {
-          continue;
-        }
-        // const {analysis, detected, handler, resolution} = trait;
-        const analysis = trait.analysis as ComponentAnalysisData;
-        // The template is parsed twice, once according to user's specifications
-        // template.emitNodes, and second time for diagnostics in a manner that
-        // preserves source map information. We use the latter.
-        const templateAst: TmplAstNode[] = analysis.template.diagNodes;
-        const visitor = new R3Visitor(position);
-        visitor.visitAll(templateAst);
-        const {path} = visitor;
-        if (!path.length) {
-          continue;
-        }
-        const last = path[path.length - 1];
-        if (isExpressionNode(last)) {
-          const name = (last as any).name;
-          const tcf = this.host.getTcf(classDecl);
-          if (!tcf) {
-            continue;
-          }
-          const node = tcf.forEachChild(function find(node: ts.Node): ts.Identifier|undefined {
-            if (ts.isIdentifier(node) && node.text === name) {
-              return node;
-            }
-            return node.forEachChild(find);
-          });
-          if (node) {
-            return this.host.getDefinitionAndBoundSpan(tcf!, node);
-          }
-        }
-        if (isR3Node(last)) {
-          const name = (last as any).name;
-        }
-      }
-
-    } else {
-      return getDefinitionAndBoundSpanForExternalTemplate();
+    const templateAssignment = getPropertyAssignmentFromValue(node);
+    if (!templateAssignment || templateAssignment.name.getText() !== 'template') {
+      return;
     }
-    return;
+    const classDecl = getClassDeclFromDecoratorProp(templateAssignment);
+    if (!classDecl || !classDecl.name) {
+      // Does not handle anonymous class
+      return;
+    }
+    // TODO: Check if declaration is exported
+    const record = this.host.getClassRecord(compilation, classDecl);
+    if (!record) {
+      return;
+    }
+    for (const trait of record.traits) {
+      if (trait.state !== TraitState.RESOLVED) {
+        continue;
+      }
+      // const {analysis, detected, handler, resolution} = trait;
+      const analysis = trait.analysis as ComponentAnalysisData;
+      // The template is parsed twice, once according to user's specifications
+      // template.emitNodes, and second time for diagnostics in a manner that
+      // preserves source map information. We use the latter.
+      const templateAst: TmplAstNode[] = analysis.template.diagNodes;
+      const visitor = new R3Visitor(position);
+      visitor.visitAll(templateAst);
+      const {path} = visitor;
+      if (!path.length) {
+        continue;
+      }
+      const last = path[path.length - 1];
+      if (isExpressionNode(last)) {
+        const name = (last as any).name;
+        const tcf = this.host.getTcf(classDecl);
+        if (!tcf) {
+          continue;
+        }
+        const node = tcf.forEachChild(function find(node: ts.Node): ts.Identifier|undefined {
+          if (ts.isIdentifier(node) && node.text === name) {
+            return node;
+          }
+          return node.forEachChild(find);
+        });
+        if (node) {
+          return this.host.getDefinitionAndBoundSpan(tcf!, node);
+        }
+      }
+      if (isR3Node(last)) {
+        const name = (last as any).name;
+      }
+    }
   }
 
-  private analyze() {
-    // This method plays the same role as `synchronizeHostData` in typescript.
+}
+
+function parseNgCompilerOptions(project: ts.server.Project): CompilerOptions {
+  let config = {};
+  if (project instanceof ts.server.ConfiguredProject) {
+    const configPath = project.getConfigFilePath();
+    const result = ts.readConfigFile(configPath, (path: string) => project.readFile(path));
+    if (result.error) {
+      project.error(ts.flattenDiagnosticMessageText(result.error.messageText, '\n'));
+    }
+    if (result.config) {
+      config = result.config;
+    }
   }
+  const basePath = project.getCurrentDirectory();
+  return createNgCompilerOptions(basePath, config, project.getCompilationSettings());
 }
