@@ -11,10 +11,9 @@ export class R3Visitor implements r3.Visitor {
   visit(node: r3.Node) {
     const {start, end} = spanOf(node);
     if (start <= this.position && this.position <= end) {
-      console
-          .error(`Visiting ${node.constructor.name}, name = ${(node as any).name}, start = ${
-              start}, end = ${end}`);
-              this.path.push(node);
+      console.error(`Visiting ${node.constructor.name}, name = ${(node as any).name}, start = ${
+          start}, end = ${end}`);
+      this.path.push(node);
       node.visit(this);
     } else {
       console.error(`Not visiting ${node.constructor.name}, name = ${(node as any).name}, start = ${

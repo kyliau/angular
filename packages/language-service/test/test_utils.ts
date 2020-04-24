@@ -124,6 +124,12 @@ export class MockTypescriptHost implements ts.LanguageServiceHost {
     return content;
   }
 
+  projectService = {
+    toCanonicalFileName(path: string): string {
+      return path;
+    },
+  }
+
   addScript(fileName: string, content: string) {
     if (this.scriptVersion.has(fileName)) {
       throw new Error(`${fileName} is already in the root files.`);

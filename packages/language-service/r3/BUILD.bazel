@@ -1,5 +1,4 @@
 load("//tools:defaults.bzl", "pkg_npm", "ts_library")
-load("//tools/ng_rollup_bundle:ng_rollup_bundle.bzl", "ls_rollup_bundle")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -8,6 +7,7 @@ ts_library(
     srcs = glob(
         [
             "*.ts",
+            "compiler/*.ts",
         ],
     ),
     deps = [

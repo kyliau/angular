@@ -7,9 +7,7 @@
  */
 
 import * as ts from 'typescript/lib/tsserverlibrary';
-
 import {LanguageService} from './language_service'
-import {Compiler} from './compiler';
 
 export function create(info: ts.server.PluginCreateInfo): ts.LanguageService {
   const {project, languageService: tsLS, config} = info;
@@ -22,10 +20,8 @@ export function create(info: ts.server.PluginCreateInfo): ts.LanguageService {
   //    Plugin only provides information on Angular templates, no TS info at all.
   //    This effectively disables native TS features and is meant for internal
   //    use only.
-  const angularOnly = config ? config.angularOnly === true : false;
-  console.error('angularOnly', angularOnly);
-  const ngLSHost = new Compiler(project, tsLS);
-  const ngLS = new LanguageService(ngLSHost);
+  const angularOnly = config?.angularOnly === true;
+  const ngLS = new LanguageService(project, tsLS);
 
   function getSemanticDiagnostics(fileName: string): ts.Diagnostic[] {
     const results: ts.Diagnostic[] = [];
@@ -37,21 +33,21 @@ export function create(info: ts.server.PluginCreateInfo): ts.LanguageService {
     return results;
   }
 
-  function getDefinitionAndBoundSpan(
-      fileName: string, position: number): ts.DefinitionInfoAndBoundSpan|undefined {
-    if (!angularOnly) {
-      const result = tsLS.getDefinitionAndBoundSpan(fileName, position);
-      if (result) {
-        // If TS could answer the query, then return results immediately.
-        return result;
-      }
-    }
-    return ngLS.getDefinitionAndBoundSpan(fileName, position);
-  }
+  // function getDefinitionAndBoundSpan(
+  //     fileName: string, position: number): ts.DefinitionInfoAndBoundSpan|undefined {
+  //   if (!angularOnly) {
+  //     const result = tsLS.getDefinitionAndBoundSpan(fileName, position);
+  //     if (result) {
+  //       // If TS could answer the query, then return results immediately.
+  //       return result;
+  //     }
+  //   }
+  //   return ngLS.getDefinitionAndBoundSpan(fileName, position);
+  // }
 
   return {
     ...tsLS,
     getSemanticDiagnostics,
-    getDefinitionAndBoundSpan,
+    // getDefinitionAndBoundSpan,
   };
 }

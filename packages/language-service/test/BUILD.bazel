@@ -1,6 +1,8 @@
 load("//tools:defaults.bzl", "jasmine_node_test", "ts_library")
 load("//tools/circular_dependency_test:index.bzl", "circular_dependency_test")
 
+package(default_visibility = ["//packages/language-service:__subpackages__"])
+
 circular_dependency_test(
     name = "circular_deps_test",
     entry_point = "angular/packages/language-service/index.js",
@@ -19,6 +21,11 @@ ts_library(
         "//packages/language-service",
         "@npm//typescript",
     ],
+)
+
+filegroup(
+    name = "project",
+    srcs = glob(["project/**/*"]),
 )
 
 ts_library(
