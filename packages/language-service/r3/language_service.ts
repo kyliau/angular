@@ -35,6 +35,10 @@ export class LanguageService {
     if (!programWithTcf) {
       throw new Error('Failed to get program with type check file');
     }
+    console.error(`There are ${programWithTcf.getSourceFiles().length} files`)
+    for (const {fileName} of programWithTcf.getSourceFiles()) {
+      console.error(fileName);
+    }
     return programWithTcf;
   }
 

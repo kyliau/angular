@@ -14,21 +14,39 @@ const APP_COMPONENT = '/app/app.component.ts';
 const PARSING_CASES = '/app/parsing-cases.ts';
 const TEST_TEMPLATE = '/app/test.ng'
 
+const logger: ts.server.Logger = {
+  close(): void {},
+  hasLevel(level: ts.server.LogLevel): boolean { return true; },
+  loggingEnabled(): boolean { return false; },
+  perftrc(s: string): void {},
+  info(s: string): void {},
+  startGroup(): void {},
+  endGroup(): void {},
+  msg(s: string, type?: ts.server.Msg): void {},
+  getLogFileName(): string | undefined { return; },
+};
+
 describe('diagnostics', () => {
-  const mockHost = new MockTypescriptHost([APP_COMPONENT]);
-  const tsLS = ts.createLanguageService(mockHost);
+  // const mockHost = new MockTypescriptHost([APP_COMPONENT]);
+  // const tsLS = ts.createLanguageService(mockHost);
   // const project = mockHost as never as ts.server.Project;
-  // const project = new ts.server.ConfiguredProject(
-  //   's',
-  //   'b',
-  //   'c',
-  //   'd'
-  // );
+  const ps = new ts.server.ProjectService({
+    host: ts.sys,
+    logger: logger,
+    cancellationToken: ts.server.nullCancellationToken,
+    useSingleInferredProject: true,
+    useInferredProjectPerProjectRoot: true,
+    typingsInstaller: ts.server.nullTypingsInstaller,
+  } as any);
+  const configPath = require("")
+  const configPath = ts.server.toNormalizedPath('/tsconfig.json');
+  const project: ts.server.ConfiguredProject = (ps as any).createAndLoadConfiguredProject(configPath);
+  const tsLS = project.getLanguageService();
   const ngLS = new LanguageService(project, tsLS);
 
   fit('should report error for unexpected end of expression', () => {
-    mockHost.override(TEST_TEMPLATE, `{{ 5 / }}`);
-    const diags = ngLS.getSemanticDiagnostics(TEST_TEMPLATE);
+    // mockHost.override(TEST_TEMPLATE, `{{ 5 / }}`);
+    const diags = ngLS.getSemanticDiagnostics(APP_COMPONENT);
     console.error(diags);
   });
 });
