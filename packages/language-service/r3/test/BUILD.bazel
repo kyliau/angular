@@ -1,0 +1,31 @@
+load("//tools:defaults.bzl", "jasmine_node_test", "ts_library")
+
+ts_library(
+    name = "test_lib",
+    testonly = True,
+    srcs = [
+        "diagnostics_spec.ts",
+    ],
+    data = ["//packages/language-service/test:project"],
+    deps = [
+        "//packages/language-service/r3",
+        "@npm//typescript",
+        "//packages/language-service/test:test_utils_lib",
+    ],
+)
+
+jasmine_node_test(
+    name = "test",
+    data = [
+        #"//packages/common:npm_package",
+        #"//packages/core:npm_package",
+        #"//packages/forms:npm_package",
+    ],
+    tags = [
+        # the language service is not yet compatible with Ivy
+        "no-ivy-aot",
+    ],
+    deps = [
+        ":test_lib",
+    ],
+)
