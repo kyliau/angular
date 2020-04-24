@@ -38,8 +38,10 @@ describe('diagnostics', () => {
     useInferredProjectPerProjectRoot: true,
     typingsInstaller: ts.server.nullTypingsInstaller,
   } as any);
-  const configPath = require("")
-  const configPath = ts.server.toNormalizedPath('/tsconfig.json');
+  const runfiles = require("");
+
+  const configPath = ts.server.toNormalizedPath(
+    runfiles.resolveWorkspaceRelative('packages/language-service/test/project/tsconfig.json'));
   const project: ts.server.ConfiguredProject = (ps as any).createAndLoadConfiguredProject(configPath);
   const tsLS = project.getLanguageService();
   const ngLS = new LanguageService(project, tsLS);
