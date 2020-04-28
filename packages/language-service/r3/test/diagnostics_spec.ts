@@ -27,19 +27,18 @@ const logger: ts.server.Logger = {
 };
 
 describe('diagnostics', () => {
-  // const mockHost = new MockTypescriptHost([APP_COMPONENT]);
+  const mockHost = new MockTypescriptHost([APP_COMPONENT]);
   // const tsLS = ts.createLanguageService(mockHost);
   // const project = mockHost as never as ts.server.Project;
   const ps = new ts.server.ProjectService({
-    host: ts.sys,
+    host: mockHost,
     logger: logger,
     cancellationToken: ts.server.nullCancellationToken,
     useSingleInferredProject: true,
     useInferredProjectPerProjectRoot: true,
     typingsInstaller: ts.server.nullTypingsInstaller,
   } as any);
-  const runfiles = require("");
-
+  const runfiles = require(process.env['BAZEL_NODE_RUNFILES_HELPER']!);
   const configPath = ts.server.toNormalizedPath(
     runfiles.resolveWorkspaceRelative('packages/language-service/test/project/tsconfig.json'));
   const project: ts.server.ConfiguredProject = (ps as any).createAndLoadConfiguredProject(configPath);
@@ -47,8 +46,13 @@ describe('diagnostics', () => {
   const ngLS = new LanguageService(project, tsLS);
 
   fit('should report error for unexpected end of expression', () => {
+    // const program = tsLS.getProgram()!;
+    // for (const sf of program.getSourceFiles()) {
+    //   console.error(sf.fileName)
+    // }
     // mockHost.override(TEST_TEMPLATE, `{{ 5 / }}`);
-    const diags = ngLS.getSemanticDiagnostics(APP_COMPONENT);
+    // const diags = ngLS.getSemanticDiagnostics(APP_COMPONENT);
+    const diags = ngLS.getSemanticDiagnostics(TEST_TEMPLATE);
     console.error(diags);
   });
 });

@@ -54,16 +54,16 @@ export class Compiler {
     const {traitCompiler} = this.compilation;
 
     for (const sf of this.program.getSourceFiles()) {
-      console.error(sf.fileName)
+      // console.error(sf.fileName)
       const analyzeFileSpan = this.perfRecorder.start('analyzeFile', sf);
       try {
         traitCompiler.analyzeSync(sf);
       } catch (e) {
-        console.error(e)
+        console.error(e);
         if (isSyntaxError(e)) {
           const parseErrors = getParseErrors(e);
           this.diagnostics = parseErrors.map(parseErrorToTsDiagnostic);
-          console.error(this.diagnostics);
+          // console.error(this.diagnostics);
         }
         return;
       }

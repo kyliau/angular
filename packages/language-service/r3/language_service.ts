@@ -26,24 +26,28 @@ export class LanguageService {
     this.compiler = new Compiler(project, this.program, this.options);
   }
 
-  private getProgramWithTcf() {
+  private getProgramWithTcf(): ts.Program|undefined {
     const program = this.tsLS.getProgram();
     if (!program) {
       throw new Error('Failed to get program');
     }
     const programWithTcf = this.compiler.analyze(program);
     if (!programWithTcf) {
-      throw new Error('Failed to get program with type check file');
+      return;
+      // throw new Error('Failed to get program with type check file');
     }
-    console.error(`There are ${programWithTcf.getSourceFiles().length} files`)
-    for (const {fileName} of programWithTcf.getSourceFiles()) {
-      console.error(fileName);
-    }
+    // console.error(`There are ${programWithTcf.getSourceFiles().length} files`)
+    // for (const {fileName} of programWithTcf.getSourceFiles()) {
+    //   console.error(fileName);
+    // }
     return programWithTcf;
   }
 
   getSemanticDiagnostics(fileName: string): ts.Diagnostic[] {
     const program = this.getProgramWithTcf();
+    if (!program) {
+      return this.compiler.getDiagnostics();
+    }
     const sourceFile = program.getSourceFile(fileName);
     if (!sourceFile) {
       return [];
