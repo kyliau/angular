@@ -77,8 +77,17 @@ export class LanguageService {
     if (!tcf) {
       return;
     }
-    console.error(tcf.text === tcf.getText());
     console.error(tcf.text);
+    debugger;
+    ts.forEachTrailingCommentRange(tcf.text, 0, (pos: number, end:number, kind: ts.CommentKind) => {
+      console.error("CALLED")
+      if (kind !== ts.SyntaxKind.MultiLineCommentTrivia) {
+        return;
+      }
+      console.error(tcf.text.substring(pos, end));
+    });
+
+
     // TODO: Get proper source mapping. Use dummy name matching for now.
     function findName(node: ts.Node): ts.Identifier|undefined {
       if (ts.isIdentifier(node) && node.text === identifier) {

@@ -45,6 +45,7 @@ export class Compiler {
     }
     const {traitCompiler} = this.compiler['compilation']!;
     const record = traitCompiler.recordFor(clazz as ClassDeclaration);
+    debugger;
     if (!record) {
       return;
     }
@@ -53,6 +54,7 @@ export class Compiler {
         continue;
       }
       const analysis = trait.analysis as ComponentAnalysisData;
+      debugger;
       return analysis.template.diagNodes;
     }
   }
