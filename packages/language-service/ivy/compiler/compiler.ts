@@ -7,10 +7,14 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import {TmplAstNode} from '@angular/compiler';
 import {CompilerOptions} from '@angular/compiler-cli';
+import {ComponentAnalysisData} from '@angular/compiler-cli/src/ngtsc/annotations/src/component';
 import {NgCompiler, NgCompilerHost} from '@angular/compiler-cli/src/ngtsc/core';
-import {AbsoluteFsPath} from '@angular/compiler-cli/src/ngtsc/file_system';
-import {TypeCheckingProgramStrategy, UpdateMode} from '@angular/compiler-cli/src/ngtsc/typecheck';
+import {absoluteFromSourceFile, AbsoluteFsPath} from '@angular/compiler-cli/src/ngtsc/file_system';
+import {ClassDeclaration} from '@angular/compiler-cli/src/ngtsc/reflection';
+import {TraitState} from '@angular/compiler-cli/src/ngtsc/transform';
+import {TypeCheckingProgramStrategy, TypeCheckShimGenerator, UpdateMode} from '@angular/compiler-cli/src/ngtsc/typecheck';
 import * as ts from 'typescript/lib/tsserverlibrary';
 
 import {makeCompilerHostFromProject} from './compiler_host';
@@ -32,6 +36,31 @@ export class Compiler {
     this.strategy = createTypeCheckingProgramStrategy(project);
     this.lastKnownProgram = this.strategy.getProgram();
     this.compiler = new NgCompiler(ngCompilerHost, options, this.lastKnownProgram, this.strategy);
+  }
+
+  getTemplateAst(clazz: ts.ClassDeclaration): TmplAstNode[]|undefined {
+    if (!clazz.name) {
+      // Does not handle anonymous class
+      return;
+    }
+    const {traitCompiler} = this.compiler['compilation']!;
+    const record = traitCompiler.recordFor(clazz as ClassDeclaration);
+    if (!record) {
+      return;
+    }
+    for (const trait of record.traits) {
+      if (trait.state !== TraitState.RESOLVED) {
+        continue;
+      }
+      const analysis = trait.analysis as ComponentAnalysisData;
+      return analysis.template.diagNodes;
+    }
+  }
+
+  typeCheckFileFor(clazz: ts.ClassDeclaration): ts.SourceFile|undefined {
+    const absPath = absoluteFromSourceFile(clazz.getSourceFile());
+    const tcf = TypeCheckShimGenerator.shimFor(absPath);
+    return this.lastKnownProgram.getSourceFile(tcf);
   }
 
   setCompilerOptions(options: CompilerOptions) {

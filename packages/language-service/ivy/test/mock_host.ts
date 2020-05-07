@@ -106,7 +106,7 @@ export function setup() {
 }
 
 class MockService {
-  private readonly overwritten = new Set<ts.server.NormalizedPath>();
+  private readonly overwritten = new Map<ts.server.NormalizedPath, string>();
 
   constructor(
       private readonly project: ts.server.Project,
@@ -115,8 +115,7 @@ class MockService {
 
   overwrite(fileName: string, newText: string): string {
     const scriptInfo = this.getScriptInfo(fileName);
-    this.overwriteScriptInfo(scriptInfo, preprocess(newText));
-    return newText;
+    return this.overwriteScriptInfo(scriptInfo, newText);
   }
 
   overwriteInlineTemplate(fileName: string, newTemplate: string): string {
@@ -125,15 +124,14 @@ class MockService {
     const originalContent = snapshot.getText(0, snapshot.getLength());
     const newContent =
         originalContent.replace(/template: `([\s\S]+)`/, `template: \`${newTemplate}\``);
-    this.overwriteScriptInfo(scriptInfo, preprocess(newContent));
-    return newContent;
+    return this.overwriteScriptInfo(scriptInfo, newContent);
   }
 
   reset() {
     if (this.overwritten.size === 0) {
       return;
     }
-    for (const fileName of this.overwritten) {
+    for (const [fileName, content] of this.overwritten) {
       const scriptInfo = this.getScriptInfo(fileName);
       const reloaded = scriptInfo.reloadFromFile();
       if (!reloaded) {
@@ -151,10 +149,25 @@ class MockService {
     return scriptInfo;
   }
 
+  getCursor(fileName: string): number {
+    const path = ts.server.toNormalizedPath(fileName);
+    if (!this.overwritten.has(path)) {
+      throw new Error(`${fileName} is not overwritten`);
+    }
+    const content = this.overwritten.get(path)!;
+    const cursorIndex = content.indexOf('¦');
+    if (cursorIndex === -1) {
+      throw new Error(`No cursor ¦ in ${fileName}`);
+    }
+    return cursorIndex;
+  }
+
   private overwriteScriptInfo(scriptInfo: ts.server.ScriptInfo, newText: string) {
     const snapshot = scriptInfo.getSnapshot();
-    scriptInfo.editContent(0, snapshot.getLength(), newText);
-    this.overwritten.add(scriptInfo.fileName);
+    const preprocessed = preprocess(newText);
+    scriptInfo.editContent(0, snapshot.getLength(), preprocessed);
+    this.overwritten.set(scriptInfo.fileName, newText);
+    return preprocessed;
   }
 }
 

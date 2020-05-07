@@ -8,7 +8,10 @@
 
 import {CompilerOptions, createNgCompilerOptions} from '@angular/compiler-cli';
 import * as ts from 'typescript/lib/tsserverlibrary';
+
 import {Compiler} from './compiler/compiler';
+import {findTightestTemplateNode, isR3Node} from './r3_utils';
+import {findTightestNode, getClassDeclFromDecoratorProp, getPropertyAssignmentFromValue} from './ts_utils';
 
 export class LanguageService {
   private options: CompilerOptions;
@@ -30,6 +33,70 @@ export class LanguageService {
       return [];
     }
     return this.compiler.getDiagnostics(sourceFile);
+  }
+
+  getQuickInfoAtPosition(fileName: string, position: number): ts.QuickInfo|undefined {
+    if (!fileName.endsWith('.ts')) {
+      // TODO: Does not support .html for now
+      return;
+    }
+    const program = this.compiler.analyze();
+    if (!program) {
+      return;
+    }
+    const sourceFile = program.getSourceFile(fileName);
+    if (!sourceFile) {
+      return;
+    }
+    const node = findTightestNode(sourceFile, position);
+    if (!node) {
+      return;
+    }
+    const templateAssignment = getPropertyAssignmentFromValue(node);
+    if (!templateAssignment || templateAssignment.name.getText() !== 'template') {
+      return;
+    }
+    const classDecl = getClassDeclFromDecoratorProp(templateAssignment);
+    if (!classDecl || !classDecl.name) {
+      return;
+    }
+    const templateAst = this.compiler.getTemplateAst(classDecl);
+    if (!templateAst) {
+      return;
+    }
+    const templateNode = findTightestTemplateNode(templateAst, position);
+    if (!templateNode) {
+      return;
+    }
+    if (isR3Node(templateNode)) {
+      // TODO: No support for HTML entities (e.g. selectors) yet.
+      return;
+    }
+    const identifier = (templateNode as any).name;
+    const tcf = this.compiler.typeCheckFileFor(classDecl);
+    if (!tcf) {
+      return;
+    }
+    console.error(tcf.text === tcf.getText());
+    console.error(tcf.text);
+    // TODO: Get proper source mapping. Use dummy name matching for now.
+    function findName(node: ts.Node): ts.Identifier|undefined {
+      if (ts.isIdentifier(node) && node.text === identifier) {
+        return node;
+      }
+      return node.forEachChild(findName);
+    }
+    const matched = findName(tcf);
+    if (!matched) {
+      return;
+    }
+    const quickInfo = this.tsLS.getQuickInfoAtPosition(tcf.fileName, matched.getStart());
+    if (!quickInfo) {
+      return;
+    }
+    quickInfo.textSpan.start = templateNode.sourceSpan.start;
+    quickInfo.textSpan.length = templateNode.sourceSpan.end - templateNode.sourceSpan.start;
+    return quickInfo;
   }
 
   private watchConfigFile(project: ts.server.Project) {

@@ -24,8 +24,20 @@ export function create(info: ts.server.PluginCreateInfo): ts.LanguageService {
     return diagnostics;
   }
 
+  function getQuickInfoAtPosition(fileName: string, position: number): ts.QuickInfo|undefined {
+    if (!angularOnly) {
+      const quickInfo = tsLS.getQuickInfoAtPosition(fileName, position);
+      // If TS can answer the query then immediately return TS result
+      if (quickInfo) {
+        return quickInfo;
+      }
+    }
+    return ngLS.getQuickInfoAtPosition(fileName, position);
+  }
+
   return {
     ...tsLS,
     getSemanticDiagnostics,
+    getQuickInfoAtPosition,
   };
 }
