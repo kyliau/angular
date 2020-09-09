@@ -11,7 +11,7 @@ import * as i18n from '../i18n/i18n_ast';
 import * as html from '../ml_parser/ast';
 import {replaceNgsp} from '../ml_parser/html_whitespaces';
 import {isNgTemplate} from '../ml_parser/tags';
-import {ParseError, ParseErrorLevel, ParseSourceSpan, ParseLocation, ParseSourceFile} from '../parse_util';
+import {ParseError, ParseErrorLevel, ParseLocation, ParseSourceFile, ParseSourceSpan} from '../parse_util';
 import {isStyleUrlResolvable} from '../style_url_resolver';
 import {BindingParser} from '../template_parser/binding_parser';
 import {PreparsedElementType, preparseElement} from '../template_parser/template_preparser';
@@ -331,7 +331,12 @@ class HtmlAstToIvyAst implements html.Visitor {
     const srcSpan = attribute.sourceSpan;
     const absoluteOffset =
         attribute.valueSpan ? attribute.valueSpan.start.offset : srcSpan.start.offset;
-
+    // TODO: In order to compute the name span correctly, we require not only
+    // the matched keywords, but also the start and end indices of each
+    // capturing group. String.prototype.match() currently does not return the
+    // indices, but there is an ECMAScript proposal to add that feature, and
+    // it is already in stage 3. Switch to the new implementation when it becomes
+    // available. See https://github.com/tc39/proposal-regexp-match-indices
     const bindParts = name.match(BIND_NAME_REGEXP);
     let hasBinding = false;
 
@@ -415,13 +420,12 @@ class HtmlAstToIvyAst implements html.Visitor {
     } else if (identifier.length === 0) {
       this.reportError(`Variable does not have a name`, sourceSpan);
     }
-    const {start} = sourceSpan;
-    const end = new ParseLocation(
-      start.file,
-      start.offset + identifier.length,
-      start.line,
-      start.col  + identifier.length,
-    );
+    // TODO: This is a stopgap solution before we could extract the indices
+    // of the identifer in parseAttribute().
+    const offset =
+        sourceSpan.toString().startsWith('data-let-') ? 'data-let-'.length : 'let-'.length;
+    const start = sourceSpan.start.moveBy(offset);
+    const end = start.moveBy(identifier.length);
     const nameSpan = new ParseSourceSpan(start, end, identifier);
     variables.push(new t.Variable(identifier, value, sourceSpan, nameSpan, valueSpan));
   }
@@ -499,6 +503,9 @@ class NonBindableVisitor implements html.Visitor {
 
 const NON_BINDABLE_VISITOR = new NonBindableVisitor();
 
+/**
+ * Remove 'data-' prefix from the start of `attrName`, if it is present.
+ */
 function normalizeAttributeName(attrName: string): string {
   return /^data-/i.test(attrName) ? attrName.substring(5) : attrName;
 }

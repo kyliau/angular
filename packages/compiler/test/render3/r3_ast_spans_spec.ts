@@ -50,8 +50,12 @@ class R3AstSourceSpans implements t.Visitor<void> {
   }
 
   visitVariable(variable: t.Variable) {
-    this.result.push(
-        ['Variable', humanizeSpan(variable.sourceSpan), humanizeSpan(variable.valueSpan)]);
+    this.result.push([
+      'Variable',
+      humanizeSpan(variable.sourceSpan),
+      humanizeSpan(variable.nameSpan),
+      humanizeSpan(variable.valueSpan),
+    ]);
   }
 
   visitReference(reference: t.Reference) {
@@ -207,9 +211,10 @@ describe('R3 AST source spans', () => {
     });
 
     it('is correct for variables via let-...', () => {
-      expectFromHtml('<ng-template let-a="b"></ng-template>').toEqual([
-        ['Template', '0:37', '0:23', '23:37'],
-        ['Variable', '13:22', '20:21'],
+      expectFromHtml('<ng-template let-a="b" data-let-c="d"></ng-template>').toEqual([
+        ['Template', '0:52', '0:38', '38:52'],
+        ['Variable', '13:22', '17:18', '20:21'],  // let-a="b", a, b
+        ['Variable', '23:37', '32:33', '35:36'],  // data-let-c="d", c, d
       ]);
     });
 
@@ -238,8 +243,8 @@ describe('R3 AST source spans', () => {
       expectFromHtml('<div *ngFor="let item of items"></div>').toEqual([
         ['Template', '0:38', '0:32', '32:38'],
         ['TextAttribute', '5:31', '<empty>'],
-        ['BoundAttribute', '5:31', '25:30'],  // *ngFor="let item of items" -> items
-        ['Variable', '13:22', '<empty>'],     // let item
+        ['BoundAttribute', '5:31', '25:30'],        // *ngFor="let item of items" -> items
+        ['Variable', '13:22', '17:21', '<empty>'],  // "let item ", item
         ['Element', '0:38', '0:32', '32:38'],
       ]);
 
@@ -261,7 +266,7 @@ describe('R3 AST source spans', () => {
       expectFromHtml('<div *ngIf="let a=b"></div>').toEqual([
         ['Template', '0:27', '0:21', '21:27'],
         ['TextAttribute', '5:20', '<empty>'],
-        ['Variable', '12:19', '18:19'],  // let a=b -> b
+        ['Variable', '12:19', '16:17', '18:19'],  // let a=b, a, b
         ['Element', '0:27', '0:21', '21:27'],
       ]);
     });
@@ -269,8 +274,8 @@ describe('R3 AST source spans', () => {
     it('is correct for variables via as ...', () => {
       expectFromHtml('<div *ngIf="expr as local"></div>').toEqual([
         ['Template', '0:33', '0:27', '27:33'],
-        ['BoundAttribute', '5:26', '12:16'],  // ngIf="expr as local" -> expr
-        ['Variable', '6:25', '6:10'],         // ngIf="expr as local -> ngIf
+        ['BoundAttribute', '5:26', '12:16'],    // ngIf="expr as local" -> expr
+        ['Variable', '6:25', '20:25', '6:10'],  // ngIf="expr as local, local, ngIf
         ['Element', '0:33', '0:27', '27:33'],
       ]);
     });
