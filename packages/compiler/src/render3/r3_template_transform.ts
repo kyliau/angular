@@ -11,7 +11,7 @@ import * as i18n from '../i18n/i18n_ast';
 import * as html from '../ml_parser/ast';
 import {replaceNgsp} from '../ml_parser/html_whitespaces';
 import {isNgTemplate} from '../ml_parser/tags';
-import {ParseError, ParseErrorLevel, ParseSourceSpan} from '../parse_util';
+import {ParseError, ParseErrorLevel, ParseSourceSpan, ParseLocation, ParseSourceFile} from '../parse_util';
 import {isStyleUrlResolvable} from '../style_url_resolver';
 import {BindingParser} from '../template_parser/binding_parser';
 import {PreparsedElementType, preparseElement} from '../template_parser/template_preparser';
@@ -159,7 +159,7 @@ class HtmlAstToIvyAst implements html.Visitor {
             templateKey, templateValue, attribute.sourceSpan, absoluteValueOffset, [],
             templateParsedProperties, parsedVariables);
         templateVariables.push(...parsedVariables.map(
-            v => new t.Variable(v.name, v.value, v.sourceSpan, v.valueSpan)));
+            v => new t.Variable(v.name, v.value, v.sourceSpan, v.keySpan, v.valueSpan)));
       } else {
         // Check for variables, events, property bindings, interpolation
         hasBinding = this.parseAttribute(
@@ -415,8 +415,15 @@ class HtmlAstToIvyAst implements html.Visitor {
     } else if (identifier.length === 0) {
       this.reportError(`Variable does not have a name`, sourceSpan);
     }
-
-    variables.push(new t.Variable(identifier, value, sourceSpan, valueSpan));
+    const {start} = sourceSpan;
+    const end = new ParseLocation(
+      start.file,
+      start.offset + identifier.length,
+      start.line,
+      start.col  + identifier.length,
+    );
+    const nameSpan = new ParseSourceSpan(start, end, identifier);
+    variables.push(new t.Variable(identifier, value, sourceSpan, nameSpan, valueSpan));
   }
 
   private parseReference(
