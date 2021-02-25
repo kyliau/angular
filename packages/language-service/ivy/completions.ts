@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {AST, BindingPipe, EmptyExpr, ImplicitReceiver, LiteralPrimitive, MethodCall, ParseSourceSpan, PropertyRead, PropertyWrite, SafeMethodCall, SafePropertyRead, TmplAstBoundAttribute, TmplAstBoundEvent, TmplAstElement, TmplAstNode, TmplAstReference, TmplAstTemplate, TmplAstTextAttribute, TmplAstVariable} from '@angular/compiler';
+import {AST, BindingPipe, EmptyExpr, ImplicitReceiver, LiteralPrimitive, MethodCall, ParseSourceSpan, PropertyRead, PropertyWrite, SafeMethodCall, SafePropertyRead, TmplAstBoundAttribute, TmplAstBoundEvent, TmplAstElement, TmplAstNode, TmplAstReference, TmplAstTemplate, TmplAstText, TmplAstTextAttribute, TmplAstVariable} from '@angular/compiler';
 import {NgCompiler} from '@angular/compiler-cli/src/ngtsc/core';
 import {CompletionKind, DirectiveInScope, TemplateDeclarationSymbol} from '@angular/compiler-cli/src/ngtsc/typecheck/api';
 import {BoundEvent} from '@angular/compiler/src/render3/r3_ast';
@@ -336,7 +336,7 @@ export class CompletionBuilder<N extends TmplAstNode|AST> {
   }
 
   private isElementTagCompletion(): this is CompletionBuilder<TmplAstElement> {
-    return this.node instanceof TmplAstElement &&
+    return (this.node instanceof TmplAstElement || this.node instanceof TmplAstText) &&
         this.nodeContext === CompletionNodeContext.ElementTag;
   }
 
@@ -347,7 +347,7 @@ export class CompletionBuilder<N extends TmplAstNode|AST> {
     // The replacementSpan is the tag name.
     const replacementSpan: ts.TextSpan = {
       start: this.node.sourceSpan.start.offset + 1,  // account for leading '<'
-      length: this.node.name.length,
+      length: this.node.name?.length ?? 0,
     };
 
     const entries: ts.CompletionEntry[] =

@@ -285,6 +285,13 @@ describe('completions', () => {
   });
 
   describe('element tag scope', () => {
+    fit('should return completions for incomplete open tag', () => {
+      const {templateFile} = setup(`<`, '');
+      templateFile.moveCursorToText('<¦');
+      const completions = templateFile.getCompletionsAtPosition();
+      expect(completions).toBeDefined();
+    });
+
     it('should return DOM completions', () => {
       const {templateFile} = setup(`<div>`, '');
       templateFile.moveCursorToText('<div¦>');
@@ -662,7 +669,7 @@ function setup(
         export class AppCmp {
           ${classContents}
         }
-        
+
         ${otherDirectiveClassDecls}
 
         @NgModule({

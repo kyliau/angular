@@ -449,6 +449,11 @@ function nodeContextFromTarget(target: TargetContext): CompletionNodeContext {
       } else {
         return CompletionNodeContext.None;
       }
+    case TargetNodeKind.RawTemplateNode:
+      if (target.node.sourceSpan.toString().startsWith('<')) {
+        return CompletionNodeContext.ElementTag;
+      }
+      return CompletionNodeContext.None;
     default:
       // No special context is available.
       return CompletionNodeContext.None;
